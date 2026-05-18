@@ -111,8 +111,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     try {
       await updateDeal(id, { stage_id: stageId })
       fetchData()
-    } catch {
-      alert('Error al actualizar la etapa')
+    } catch (err) {
+      alert('Error al actualizar la etapa:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setUpdatingStage(false)
     }
@@ -125,8 +125,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
       await addActivity({ kind: 'nota', title: 'Nota', description: noteText.trim(), deal_id: id })
       setNoteText('')
       fetchData()
-    } catch {
-      alert('Error al guardar la nota')
+    } catch (err) {
+      alert('Error al guardar la nota:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSavingNote(false)
     }

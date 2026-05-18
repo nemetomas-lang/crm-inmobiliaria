@@ -162,8 +162,8 @@ function KanbanColumn({ stage, deals, contacts, onDealCreated }: KanbanColumnPro
       setForm({ title: '', contact_id: '', value: '', currency: 'USD', tipo: '' })
       setShowAddForm(false)
       onDealCreated()
-    } catch {
-      alert('Error al crear el deal')
+    } catch (err) {
+      alert('Error al crear el deal:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }

@@ -63,8 +63,8 @@ function FieldRow({ label, value, onSave, type = 'text', icon }: FieldRowProps) 
     try {
       await onSave(editValue)
       setEditing(false)
-    } catch {
-      alert('Error al guardar')
+    } catch (err) {
+      alert('Error al guardar:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }

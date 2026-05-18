@@ -95,8 +95,8 @@ export default function PropertiesPage() {
       })
       setShowModal(false)
       fetchProperties()
-    } catch {
-      alert('Error al crear la propiedad')
+    } catch (err) {
+      alert('Error al crear la propiedad:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }

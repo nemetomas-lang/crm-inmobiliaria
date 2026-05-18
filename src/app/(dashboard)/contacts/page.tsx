@@ -105,8 +105,8 @@ export default function ContactsPage() {
       })
       setShowModal(false)
       fetchContacts()
-    } catch {
-      alert('Error al crear el contacto')
+    } catch (err) {
+      alert('Error al crear el contacto:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }

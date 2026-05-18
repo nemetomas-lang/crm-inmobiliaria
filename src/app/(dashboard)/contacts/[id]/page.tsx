@@ -100,8 +100,8 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       })
       setNoteText('')
       fetchData()
-    } catch {
-      alert('Error al guardar la nota')
+    } catch (err) {
+      alert('Error al guardar la nota:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSavingNote(false)
     }

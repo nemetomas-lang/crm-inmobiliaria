@@ -105,8 +105,8 @@ export default function CalendarPage() {
       setShowModal(false)
       setForm({ title: '', kind: 'llamada', scheduled_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"), contact_id: '' })
       fetchData()
-    } catch {
-      alert('Error al crear la tarea')
+    } catch (err) {
+      alert('Error al crear la tarea:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }
@@ -116,8 +116,8 @@ export default function CalendarPage() {
     try {
       await completeTask(taskId)
       fetchData()
-    } catch {
-      alert('Error al completar la tarea')
+    } catch (err) {
+      alert('Error al completar la tarea:\n\n' + (err instanceof Error ? err.message : String(err)))
     }
   }
 

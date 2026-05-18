@@ -87,8 +87,8 @@ export default function CompaniesPage() {
       setShowModal(false)
       setForm({ name: '', tax_id: '', email: '', phone: '', address: '', city: '', province: '', website: '', notes: '' })
       fetchCompanies()
-    } catch {
-      alert('Error al crear la empresa')
+    } catch (err) {
+      alert('Error al crear la empresa:\n\n' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSaving(false)
     }
