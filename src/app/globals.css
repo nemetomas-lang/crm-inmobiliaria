@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-orange: #f5912c;
+  --color-orange-50: #fff4e8;
+  --color-orange-100: #ffe6cb;
+  --color-orange-200: #ffcd97;
+  --color-orange-300: #ffb163;
+  --color-orange-400: #ff952f;
+  --color-orange-500: #f5912c;
+  --color-orange-600: #e07a13;
+  --color-orange-700: #b85e0a;
+  --color-orange-800: #8f4508;
+  --color-orange-900: #6b3206;
+
+  --color-ink: #343434;
+  --color-ink-2: #4a4a4a;
+  --color-ink-3: #6b6b6b;
+  --color-ink-light: #9a9a9a;
+
+  --color-border: #ececec;
+  --color-surface: #f9f9f9;
+  --color-white: #ffffff;
+
+  /* Pipeline stage colors */
+  --color-stage-nuevo: #3b82f6;
+  --color-stage-contactado: #eab308;
+  --color-stage-visito: #8b5cf6;
+  --color-stage-negociacion: #f5912c;
+  --color-stage-cerrado: #22c55e;
+  --color-stage-perdido: #ef4444;
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.10), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+  --shadow-modal: 0 20px 60px 0 rgb(0 0 0 / 0.18);
+}
+
+:root {
+  --background: #f9f9f9;
+  --foreground: #343434;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #f5912c;
+  outline-offset: 2px;
+}
+
+/* Skeleton animation */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background-color: #e8e8e8;
+  border-radius: 6px;
+}
+
+/* Kanban drag overlay */
+.kanban-drag-overlay {
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  transform: rotate(2deg) scale(1.03);
+  border-radius: 12px;
+  cursor: grabbing;
+}
