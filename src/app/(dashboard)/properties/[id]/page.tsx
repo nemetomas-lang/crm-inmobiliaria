@@ -7,6 +7,9 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/Button'
+import { FileUpload } from '@/components/ui/FileUpload'
+import { Input, Select } from '@/components/ui/Input'
 import {
   fmtCurrency,
   fmtSqm,
@@ -14,34 +17,23 @@ import {
   propertyEstadoConfig,
 } from '@/lib/utils'
 import type { Property, PropertyEstado, PropertyTipo, Contact } from '@/lib/types'
-import { updateProperty } from '../actions'
+import { updateProperty, addGarante, removeGarante } from '../actions'
 import {
-  ArrowLeft,
-  Home,
-  BedDouble,
-  Bath,
-  Car,
-  Maximize2,
-  MapPin,
-  Edit2,
-  Save,
-  X,
-  User,
-  FileText,
-  DollarSign,
-  Calendar,
-  Compass,
+  ArrowLeft, Home, BedDouble, Bath, Car, Maximize2, MapPin, Edit2, Save, X,
+  User, FileText, DollarSign, Calendar, Compass, Image as ImageIcon, Video,
+  Receipt, ShieldCheck, Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type TabId = 'general' | 'propietario' | 'inquilino' | 'contrato' | 'impuestos'
+type TabId = 'general' | 'propietario' | 'inquilino' | 'contrato' | 'impuestos' | 'fotos'
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'general', label: 'Datos Generales' },
-  { id: 'propietario', label: 'Propietario' },
-  { id: 'inquilino', label: 'Inquilino/Garantes' },
-  { id: 'contrato', label: 'Contrato' },
-  { id: 'impuestos', label: 'Impuestos/Servicios' },
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: 'general',     label: 'Datos Generales',   icon: <Home size={14} /> },
+  { id: 'propietario', label: 'Propietario',       icon: <User size={14} /> },
+  { id: 'inquilino',   label: 'Inquilino/Garantes',icon: <ShieldCheck size={14} /> },
+  { id: 'contrato',    label: 'Contrato',          icon: <FileText size={14} /> },
+  { id: 'impuestos',   label: 'Impuestos/Servicios', icon: <Receipt size={14} /> },
+  { id: 'fotos',       label: 'Fotos / Videos',    icon: <ImageIcon size={14} /> },
 ]
 
 interface FieldRowProps {
@@ -50,9 +42,10 @@ interface FieldRowProps {
   onSave?: (value: string) => Promise<void>
   type?: string
   icon?: React.ReactNode
+  options?: { value: string; label: string }[]
 }
 
-function FieldRow({ label, value, onSave, type = 'text', icon }: FieldRowProps) {
+function FieldRow({ label, value, onSave, type = 'text', icon, options }: FieldRowProps) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(String(value ?? ''))
   const [saving, setSaving] = useState(false)
@@ -71,19 +64,31 @@ function FieldRow({ label, value, onSave, type = 'text', icon }: FieldRowProps) 
   }
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0 group">
+    <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-0 group">
       {icon && <span className="text-ink-light mt-0.5 flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
         <p className="text-xs text-ink-light mb-0.5">{label}</p>
         {editing ? (
           <div className="flex items-center gap-2">
-            <input
-              type={type}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              autoFocus
-              className="flex-1 px-2 py-1 text-sm border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange/30 focus:border-orange"
-            />
+            {options ? (
+              <select
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                autoFocus
+                className="flex-1 px-2 py-1 text-sm border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange/30 focus:border-orange"
+              >
+                <option value="">—</option>
+                {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ) : (
+              <input
+                type={type}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                autoFocus
+                className="flex-1 px-2 py-1 text-sm border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-orange/30 focus:border-orange"
+              />
+            )}
             <button onClick={handleSave} disabled={saving} className="text-green-600 hover:text-green-700 p-1">
               {saving ? <span className="text-xs">...</span> : <Save size={14} />}
             </button>
@@ -115,40 +120,52 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [property, setProperty] = useState<Property | null>(null)
   const [owner, setOwner] = useState<Contact | null>(null)
   const [tenant, setTenant] = useState<Contact | null>(null)
+  const [garantes, setGarantes] = useState<Contact[]>([])
+  const [allContacts, setAllContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('general')
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
-    const { data } = await supabase.from('properties').select('*').eq('id', id).single()
-    if (data) {
-      setProperty(data as Property)
-      if (data.owner_contact_id) {
-        const { data: ownerData } = await supabase
-          .from('contacts').select('*').eq('id', data.owner_contact_id).single()
-        setOwner(ownerData as Contact)
-      }
-      if (data.tenant_contact_id) {
-        const { data: tenantData } = await supabase
-          .from('contacts').select('*').eq('id', data.tenant_contact_id).single()
-        setTenant(tenantData as Contact)
-      }
-    }
+    const [{ data: prop }, { data: contacts }, { data: garanteRows }] = await Promise.all([
+      supabase.from('properties').select('*').eq('id', id).single(),
+      supabase.from('contacts').select('*').order('first_name'),
+      supabase.from('property_garantes').select('contact_id').eq('property_id', id),
+    ])
+
+    if (prop) setProperty(prop as Property)
+    const allC = (contacts ?? []) as Contact[]
+    setAllContacts(allC)
+    if (prop?.owner_contact_id) setOwner(allC.find((c) => c.id === prop.owner_contact_id) ?? null)
+    else setOwner(null)
+    if (prop?.tenant_contact_id) setTenant(allC.find((c) => c.id === prop.tenant_contact_id) ?? null)
+    else setTenant(null)
+    const garanteIds = (garanteRows ?? []).map((r: { contact_id: string }) => r.contact_id)
+    setGarantes(allC.filter((c) => garanteIds.includes(c.id)))
     setLoading(false)
   }, [id])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const handleUpdate = async (field: keyof Property, value: string) => {
+  const handleUpdate = useCallback(async (field: keyof Property, value: string | null) => {
     let parsed: string | number | null = value
     const numericFields: (keyof Property)[] = [
       'price_ars', 'price_usd', 'expensas', 'sup_cubierta', 'sup_descubierta',
-      'ambientes', 'dormitorios', 'banos', 'cocheras', 'antiguedad', 'pago_dia'
+      'ambientes', 'dormitorios', 'banos', 'cocheras', 'antiguedad', 'pago_dia',
     ]
-    if (numericFields.includes(field)) {
-      parsed = value ? Number(value) : null
-    }
+    if (numericFields.includes(field)) parsed = value ? Number(value) : null
     await updateProperty(id, { [field]: parsed } as never)
+    fetchData()
+  }, [id, fetchData])
+
+  // File upload helpers — wrap updateProperty so FileUpload's onChange/onChangeMulti
+  // signature matches what handleUpdate-via-storage callbacks expect.
+  const uploadField = (field: keyof Property) => async (url: string | null) => {
+    await updateProperty(id, { [field]: url } as never)
+    fetchData()
+  }
+  const uploadFieldMulti = (field: 'img_urls' | 'video_urls') => async (urls: string[]) => {
+    await updateProperty(id, { [field]: urls } as never)
     fetchData()
   }
 
@@ -179,6 +196,13 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const estadoCfg = property.estado ? propertyEstadoConfig[property.estado as PropertyEstado] : null
   const imgUrl = property.img_urls?.[0] ?? null
 
+  const propietariosDisponibles = allContacts.filter((c) => c.contact_type === 'propietario' || c.contact_type == null)
+  const inquilinosDisponibles    = allContacts.filter((c) => c.contact_type === 'inquilino' || c.contact_type == null)
+  const garantesDisponibles      = allContacts.filter((c) =>
+    c.contact_type === 'garante' &&
+    !garantes.some((g) => g.id === c.id)
+  )
+
   return (
     <>
       <Topbar title={property.title} />
@@ -191,7 +215,6 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
         {/* Header */}
         <Card padding={false} className="overflow-hidden">
           <div className="flex flex-col md:flex-row">
-            {/* Image */}
             <div className="md:w-72 h-52 md:h-auto bg-surface flex-shrink-0 relative">
               {imgUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -202,7 +225,6 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
             </div>
-            {/* Info */}
             <div className="p-6 flex-1">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -215,13 +237,10 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  {estadoCfg && (
-                    <Badge bgColor={estadoCfg.bgColor} textColor={estadoCfg.textColor} dot color={estadoCfg.color}>
-                      {estadoCfg.label}
-                    </Badge>
-                  )}
-                  {tipoCfg && (
-                    <Badge bgColor="#f3f4f6" textColor="#374151">{tipoCfg.label}</Badge>
+                  {estadoCfg && <Badge bgColor={estadoCfg.bgColor} textColor={estadoCfg.textColor} dot color={estadoCfg.color}>{estadoCfg.label}</Badge>}
+                  {tipoCfg && <Badge bgColor="#f3f4f6" textColor="#374151">{tipoCfg.label}</Badge>}
+                  {property.operacion && (
+                    <Badge bgColor="#fff4e8" textColor="#e07a13">{property.operacion === 'venta' ? 'En venta' : 'En alquiler'}</Badge>
                   )}
                 </div>
               </div>
@@ -260,24 +279,23 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Tabs */}
         <div>
-          <div className="flex gap-1 bg-surface rounded-2xl p-1 border border-border w-fit">
+          <div className="flex gap-1 bg-surface rounded-2xl p-1 border border-border w-fit overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
-                  activeTab === tab.id
-                    ? 'bg-white text-ink shadow-sm border border-border'
-                    : 'text-ink-3 hover:text-ink'
+                  'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap',
+                  activeTab === tab.id ? 'bg-white text-ink shadow-sm border border-border' : 'text-ink-3 hover:text-ink'
                 )}
               >
-                {tab.label}
+                {tab.icon}{tab.label}
               </button>
             ))}
           </div>
 
           <div className="mt-4">
+            {/* ───── DATOS GENERALES ───── */}
             {activeTab === 'general' && (
               <Card>
                 <h3 className="font-display font-semibold text-base text-ink mb-4">Datos Generales</h3>
@@ -285,115 +303,298 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   <div>
                     <FieldRow label="Código" value={property.code} onSave={(v) => handleUpdate('code', v)} icon={<FileText size={14} />} />
                     <FieldRow label="Título" value={property.title} onSave={(v) => handleUpdate('title', v)} />
-                    <FieldRow label="Tipo" value={tipoCfg?.label} onSave={(v) => handleUpdate('tipo', v)} icon={<Home size={14} />} />
-                    <FieldRow label="Estado" value={estadoCfg?.label} onSave={(v) => handleUpdate('estado', v)} />
+                    <FieldRow label="Tipo" value={tipoCfg?.label ?? property.tipo} onSave={(v) => handleUpdate('tipo', v)} icon={<Home size={14} />}
+                      options={[
+                        { value: 'casa', label: 'Casa' },
+                        { value: 'departamento', label: 'Departamento' },
+                        { value: 'local', label: 'Local Comercial' },
+                        { value: 'oficina', label: 'Oficina' },
+                        { value: 'terreno', label: 'Terreno' },
+                        { value: 'galpon', label: 'Galpón' },
+                        { value: 'campo', label: 'Campo' },
+                        { value: 'otro', label: 'Otro' },
+                      ]}
+                    />
+                    <FieldRow label="Operación" value={property.operacion === 'venta' ? 'Venta' : property.operacion === 'alquiler' ? 'Alquiler' : null}
+                      onSave={(v) => handleUpdate('operacion', v)}
+                      options={[{ value: 'venta', label: 'Venta' }, { value: 'alquiler', label: 'Alquiler' }]} />
+                    <FieldRow label="Estado" value={estadoCfg?.label ?? property.estado} onSave={(v) => handleUpdate('estado', v)}
+                      options={[
+                        { value: 'disponible', label: 'Disponible' },
+                        { value: 'reservado', label: 'Reservado' },
+                        { value: 'vendido', label: 'Vendido' },
+                        { value: 'alquilado', label: 'Alquilado' },
+                        { value: 'no_disponible', label: 'No disponible' },
+                      ]}
+                    />
                     <FieldRow label="Dirección" value={property.address} onSave={(v) => handleUpdate('address', v)} icon={<MapPin size={14} />} />
                     <FieldRow label="Barrio" value={property.barrio} onSave={(v) => handleUpdate('barrio', v)} />
                     <FieldRow label="Ciudad" value={property.city} onSave={(v) => handleUpdate('city', v)} />
-                    <FieldRow label="Provincia" value={property.province} onSave={(v) => handleUpdate('province', v)} />
                     <FieldRow label="Piso/Unidad" value={property.floor_unit} onSave={(v) => handleUpdate('floor_unit', v)} />
                   </div>
                   <div>
-                    <FieldRow label="Precio USD" value={property.price_usd} onSave={(v) => handleUpdate('price_usd', v)} type="number" icon={<DollarSign size={14} />} />
-                    <FieldRow label="Precio ARS" value={property.price_ars} onSave={(v) => handleUpdate('price_ars', v)} type="number" />
+                    <FieldRow label="Valor USD" value={property.price_usd} onSave={(v) => handleUpdate('price_usd', v)} type="number" icon={<DollarSign size={14} />} />
+                    <FieldRow label="Valor ARS" value={property.price_ars} onSave={(v) => handleUpdate('price_ars', v)} type="number" />
                     <FieldRow label="Expensas" value={property.expensas} onSave={(v) => handleUpdate('expensas', v)} type="number" />
-                    <FieldRow label="Sup. Cubierta" value={property.sup_cubierta ? `${property.sup_cubierta} m²` : null} onSave={(v) => handleUpdate('sup_cubierta', v)} icon={<Maximize2 size={14} />} />
-                    <FieldRow label="Sup. Descubierta" value={property.sup_descubierta ? `${property.sup_descubierta} m²` : null} onSave={(v) => handleUpdate('sup_descubierta', v)} />
+                    <FieldRow label="Sup. Cubierta (m²)" value={property.sup_cubierta} onSave={(v) => handleUpdate('sup_cubierta', v)} type="number" icon={<Maximize2 size={14} />} />
+                    <FieldRow label="Sup. Descubierta (m²)" value={property.sup_descubierta} onSave={(v) => handleUpdate('sup_descubierta', v)} type="number" />
                     <FieldRow label="Ambientes" value={property.ambientes} onSave={(v) => handleUpdate('ambientes', v)} type="number" />
                     <FieldRow label="Dormitorios" value={property.dormitorios} onSave={(v) => handleUpdate('dormitorios', v)} type="number" icon={<BedDouble size={14} />} />
                     <FieldRow label="Baños" value={property.banos} onSave={(v) => handleUpdate('banos', v)} type="number" icon={<Bath size={14} />} />
                     <FieldRow label="Cocheras" value={property.cocheras} onSave={(v) => handleUpdate('cocheras', v)} type="number" icon={<Car size={14} />} />
-                    <FieldRow label="Antigüedad" value={property.antiguedad ? `${property.antiguedad} años` : null} onSave={(v) => handleUpdate('antiguedad', v)} />
+                    <FieldRow label="Antigüedad (años)" value={property.antiguedad} onSave={(v) => handleUpdate('antiguedad', v)} type="number" />
                     <FieldRow label="Orientación" value={property.orientacion} onSave={(v) => handleUpdate('orientacion', v)} icon={<Compass size={14} />} />
                   </div>
                 </div>
-                {property.descripcion && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs text-ink-light mb-2">Descripción</p>
-                    <p className="text-sm text-ink-3 whitespace-pre-wrap">{property.descripcion}</p>
-                  </div>
-                )}
               </Card>
             )}
 
+            {/* ───── PROPIETARIO ───── */}
             {activeTab === 'propietario' && (
               <Card>
-                <h3 className="font-display font-semibold text-base text-ink mb-4">Propietario</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display font-semibold text-base text-ink">Propietario</h3>
+                  <ContactSelector
+                    label="Asignar"
+                    contacts={propietariosDisponibles}
+                    currentId={property.owner_contact_id}
+                    onChange={async (cid) => { await updateProperty(id, { owner_contact_id: cid ?? null }); fetchData() }}
+                    onCreateLink="/contacts"
+                  />
+                </div>
                 {owner ? (
-                  <div className="space-y-0">
-                    <FieldRow label="Nombre" value={`${owner.first_name} ${owner.last_name}`} icon={<User size={14} />} />
-                    <FieldRow label="Email" value={owner.email} />
-                    <FieldRow label="Teléfono" value={owner.phone} />
-                    <FieldRow label="DNI" value={owner.dni} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                    <div>
+                      <FieldRow label="Nombre" value={`${owner.first_name} ${owner.last_name}`} icon={<User size={14} />} />
+                      <FieldRow label="DNI" value={owner.dni} />
+                      <FieldRow label="Teléfono" value={owner.phone} />
+                      <FieldRow label="Email" value={owner.email} />
+                      <FieldRow label="Fecha de nacimiento" value={owner.birth_date} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-2">Datos bancarios</p>
+                      <FieldRow label="Banco" value={owner.banco} />
+                      <FieldRow label="Tipo de cuenta" value={owner.tipo_cuenta} />
+                      <FieldRow label="CBU" value={owner.cbu} />
+                      <FieldRow label="Alias" value={owner.alias_cbu} />
+                    </div>
                   </div>
                 ) : (
                   <EmptyState
                     title="Sin propietario asignado"
-                    description="Asociá un contacto como propietario de esta propiedad"
+                    description="Elegí un contacto tipo Propietario de la lista de arriba, o creá uno nuevo en Contactos."
                     icon={<User size={18} />}
                   />
                 )}
               </Card>
             )}
 
+            {/* ───── INQUILINO + GARANTES ───── */}
             {activeTab === 'inquilino' && (
-              <Card>
-                <h3 className="font-display font-semibold text-base text-ink mb-4">Inquilino / Garantes</h3>
-                {tenant ? (
-                  <div className="space-y-0">
-                    <FieldRow label="Nombre" value={`${tenant.first_name} ${tenant.last_name}`} icon={<User size={14} />} />
-                    <FieldRow label="Email" value={tenant.email} />
-                    <FieldRow label="Teléfono" value={tenant.phone} />
-                    <FieldRow label="DNI" value={tenant.dni} />
-                    <FieldRow label="Ocupación" value={tenant.occupation} />
+              <div className="space-y-4">
+                <Card>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-semibold text-base text-ink">Inquilino</h3>
+                    <ContactSelector
+                      label="Asignar"
+                      contacts={inquilinosDisponibles}
+                      currentId={property.tenant_contact_id}
+                      onChange={async (cid) => { await updateProperty(id, { tenant_contact_id: cid ?? null }); fetchData() }}
+                      onCreateLink="/contacts"
+                    />
                   </div>
-                ) : (
-                  <EmptyState
-                    title="Sin inquilino asignado"
-                    description="Esta propiedad no tiene inquilino activo"
-                    icon={<User size={18} />}
-                  />
-                )}
-              </Card>
+                  {tenant ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                      <div>
+                        <FieldRow label="Nombre" value={`${tenant.first_name} ${tenant.last_name}`} icon={<User size={14} />} />
+                        <FieldRow label="DNI" value={tenant.dni} />
+                        <FieldRow label="Teléfono" value={tenant.phone} />
+                        <FieldRow label="Email" value={tenant.email} />
+                        <FieldRow label="Fecha de nacimiento" value={tenant.birth_date} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-2">Datos bancarios</p>
+                        <FieldRow label="Banco" value={tenant.banco} />
+                        <FieldRow label="Tipo de cuenta" value={tenant.tipo_cuenta} />
+                        <FieldRow label="CBU" value={tenant.cbu} />
+                        <FieldRow label="Alias" value={tenant.alias_cbu} />
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState title="Sin inquilino asignado" description="Sumá un contacto tipo Inquilino" icon={<User size={18} />} />
+                  )}
+                </Card>
+
+                <Card>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-semibold text-base text-ink">Garantes</h3>
+                    <ContactSelector
+                      label="Agregar garante"
+                      contacts={garantesDisponibles}
+                      currentId={null}
+                      onChange={async (cid) => { if (cid) { await addGarante(id, cid); fetchData() } }}
+                      onCreateLink="/contacts"
+                    />
+                  </div>
+                  {garantes.length === 0 ? (
+                    <EmptyState title="Sin garantes" description="Agregá uno o más contactos tipo Garante" icon={<ShieldCheck size={18} />} />
+                  ) : (
+                    <div className="space-y-3">
+                      {garantes.map((g) => (
+                        <div key={g.id} className="border border-border rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="font-semibold text-ink">{g.first_name} {g.last_name}</p>
+                              <p className="text-xs text-ink-3">DNI {g.dni ?? '—'} · CUIL {g.cuil ?? '—'}</p>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (!confirm('¿Quitar a este garante de la propiedad?')) return
+                                try { await removeGarante(id, g.id); fetchData() }
+                                catch (err) { alert(err instanceof Error ? err.message : String(err)) }
+                              }}
+                              className="text-ink-light hover:text-red-600 p-1"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-6 text-sm">
+                            <div>
+                              <p className="text-xs text-ink-light">Teléfono</p>
+                              <p>{g.phone ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-ink-light">Email</p>
+                              <p>{g.email ?? '—'}</p>
+                            </div>
+                          </div>
+                          {g.recibos_sueldo_urls && g.recibos_sueldo_urls.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border">
+                              <p className="text-xs text-ink-light mb-2">Recibos de sueldo ({g.recibos_sueldo_urls.length})</p>
+                              <div className="space-y-1">
+                                {g.recibos_sueldo_urls.map((path, i) => (
+                                  <a
+                                    key={i}
+                                    href="#"
+                                    onClick={async (e) => {
+                                      e.preventDefault()
+                                      const supabase = createClient()
+                                      const { data } = await supabase.storage.from('garante-recibos').createSignedUrl(path, 3600)
+                                      if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+                                    }}
+                                    className="flex items-center gap-2 text-sm text-orange hover:underline"
+                                  >
+                                    <FileText size={13} /> {path.split('/').pop()}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
             )}
 
+            {/* ───── CONTRATO ───── */}
             {activeTab === 'contrato' && (
               <Card>
                 <h3 className="font-display font-semibold text-base text-ink mb-4">Contrato</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-                  <FieldRow
-                    label="Día de pago"
-                    value={property.pago_dia ? `Día ${property.pago_dia} de cada mes` : null}
-                    onSave={(v) => handleUpdate('pago_dia', v)}
-                    type="number"
-                    icon={<Calendar size={14} />}
-                  />
-                  <FieldRow
-                    label="Precio alquiler (ARS)"
-                    value={property.price_ars}
-                    onSave={(v) => handleUpdate('price_ars', v)}
-                    type="number"
-                    icon={<DollarSign size={14} />}
-                  />
-                  <FieldRow
-                    label="Expensas"
-                    value={property.expensas}
-                    onSave={(v) => handleUpdate('expensas', v)}
-                    type="number"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 mb-6">
+                  <FieldRow label="Día de pago" value={property.pago_dia ? `Día ${property.pago_dia} de cada mes` : null}
+                    onSave={(v) => handleUpdate('pago_dia', v)} type="number" icon={<Calendar size={14} />} />
+                  <FieldRow label="Operación" value={property.operacion} onSave={(v) => handleUpdate('operacion', v)}
+                    options={[{ value: 'venta', label: 'Venta' }, { value: 'alquiler', label: 'Alquiler' }]} />
+                  <FieldRow label="Valor (ARS)" value={property.price_ars} onSave={(v) => handleUpdate('price_ars', v)} type="number" icon={<DollarSign size={14} />} />
+                  <FieldRow label="Valor (USD)" value={property.price_usd} onSave={(v) => handleUpdate('price_usd', v)} type="number" />
+                  <FieldRow label="Expensas" value={property.expensas} onSave={(v) => handleUpdate('expensas', v)} type="number" />
+                </div>
+                <div className="pt-4 border-t border-border">
+                  <FileUpload
+                    bucket="property-contracts"
+                    value={property.contract_pdf_url}
+                    onChange={uploadField('contract_pdf_url')}
+                    accept="application/pdf"
+                    label="Contrato firmado (PDF)"
+                    folder={id}
                   />
                 </div>
               </Card>
             )}
 
+            {/* ───── IMPUESTOS / SERVICIOS ───── */}
             {activeTab === 'impuestos' && (
-              <Card>
-                <h3 className="font-display font-semibold text-base text-ink mb-4">Impuestos y Servicios</h3>
-                <EmptyState
-                  title="Sin datos registrados"
-                  description="Los datos de impuestos y servicios se completarán aquí"
-                  icon={<FileText size={18} />}
-                />
-              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <h3 className="font-display font-semibold text-base text-ink mb-4">Impuestos</h3>
+                  <FieldRow label="DGR — N° de cuenta" value={property.dgr_cuenta} onSave={(v) => handleUpdate('dgr_cuenta', v)} icon={<Receipt size={14} />} />
+                  <FieldRow label="Municipalidad — N° cuenta" value={property.municipalidad_cuenta} onSave={(v) => handleUpdate('municipalidad_cuenta', v)} />
+                  <FieldRow label="Nomenclatura catastral" value={property.nomenclatura_catastral} onSave={(v) => handleUpdate('nomenclatura_catastral', v)} />
+                </Card>
+                <Card>
+                  <h3 className="font-display font-semibold text-base text-ink mb-4">Servicios</h3>
+                  <FieldRow label="Agua — Unidad de facturación" value={property.agua_unidad_facturacion} onSave={(v) => handleUpdate('agua_unidad_facturacion', v)} />
+                  <FieldRow label="Luz — N° de cliente" value={property.luz_n_cliente} onSave={(v) => handleUpdate('luz_n_cliente', v)} />
+                  <FieldRow label="Luz — N° de contrato" value={property.luz_n_contrato} onSave={(v) => handleUpdate('luz_n_contrato', v)} />
+                  <FieldRow label="Gas — N° de cuenta" value={property.gas_n_cuenta} onSave={(v) => handleUpdate('gas_n_cuenta', v)} />
+                </Card>
+                <Card className="md:col-span-2">
+                  <h3 className="font-display font-semibold text-base text-ink mb-4">Escritura e informes de dominio</h3>
+                  <FieldRow label="N° de matrícula" value={property.escritura_matricula} onSave={(v) => handleUpdate('escritura_matricula', v)} icon={<FileText size={14} />} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <FileUpload
+                      bucket="property-documents"
+                      value={property.escritura_url}
+                      onChange={uploadField('escritura_url')}
+                      accept="application/pdf,image/*"
+                      label="Escritura (PDF)"
+                      folder={`${id}/escritura`}
+                    />
+                    <FileUpload
+                      bucket="property-documents"
+                      value={property.informe_dominio_url}
+                      onChange={uploadField('informe_dominio_url')}
+                      accept="application/pdf,image/*"
+                      label="Informe de dominio (PDF)"
+                      folder={`${id}/dominio`}
+                    />
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* ───── FOTOS / VIDEOS ───── */}
+            {activeTab === 'fotos' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <h3 className="font-display font-semibold text-base text-ink mb-4 flex items-center gap-2">
+                    <ImageIcon size={16} /> Fotos
+                  </h3>
+                  <FileUpload
+                    bucket="property-photos"
+                    values={property.img_urls ?? []}
+                    onChangeMulti={uploadFieldMulti('img_urls')}
+                    accept="image/*"
+                    multiple
+                    folder={id}
+                  />
+                </Card>
+                <Card>
+                  <h3 className="font-display font-semibold text-base text-ink mb-4 flex items-center gap-2">
+                    <Video size={16} /> Videos
+                  </h3>
+                  <FileUpload
+                    bucket="property-videos"
+                    values={property.video_urls ?? []}
+                    onChangeMulti={uploadFieldMulti('video_urls')}
+                    accept="video/*"
+                    multiple
+                    folder={id}
+                  />
+                </Card>
+              </div>
             )}
           </div>
         </div>
@@ -401,3 +602,64 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     </>
   )
 }
+
+// ── Inline contact picker ─────────────────────────────────────────────────
+function ContactSelector({
+  label,
+  contacts,
+  currentId,
+  onChange,
+  onCreateLink,
+}: {
+  label: string
+  contacts: Contact[]
+  currentId: string | null
+  onChange: (id: string | null) => Promise<void>
+  onCreateLink: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  return (
+    <div className="relative">
+      <Button variant="ghost" onClick={() => setOpen((v) => !v)}>
+        {label}
+      </Button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-10 w-72 bg-white border border-border rounded-xl shadow-lg p-3 space-y-2">
+          <Select
+            label=""
+            value={currentId ?? ''}
+            onChange={async (e) => {
+              setSaving(true)
+              try {
+                await onChange(e.target.value || null)
+                setOpen(false)
+              } catch (err) {
+                alert(err instanceof Error ? err.message : String(err))
+              } finally {
+                setSaving(false)
+              }
+            }}
+          >
+            <option value="">— Ninguno —</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.first_name} {c.last_name}{c.dni ? ` · DNI ${c.dni}` : ''}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-ink-3">
+            ¿No está en la lista?{' '}
+            <a href={onCreateLink} className="text-orange hover:underline">Crear contacto</a>
+          </p>
+          {saving && <p className="text-xs text-ink-light">Guardando...</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Unused import guard — Input is only referenced through Select via Input.tsx
+// but TS would warn about it being unused
+export const _input_ref = Input

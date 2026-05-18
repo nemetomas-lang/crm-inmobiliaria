@@ -2,12 +2,13 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { PropertyTipo, PropertyEstado } from '@/lib/types'
+import type { PropertyTipo, PropertyEstado, PropertyOperacion } from '@/lib/types'
 
 export interface CreatePropertyData {
   title: string
   tipo?: PropertyTipo
   estado?: PropertyEstado
+  operacion?: PropertyOperacion
   address?: string
   barrio?: string
   city?: string
@@ -27,10 +28,24 @@ export interface CreatePropertyData {
   orientacion?: string
   descripcion?: string
   img_urls?: string[]
+  video_urls?: string[]
   amenities?: string[]
   pago_dia?: number
-  owner_contact_id?: string
-  tenant_contact_id?: string
+  owner_contact_id?: string | null
+  tenant_contact_id?: string | null
+  // Documents
+  contract_pdf_url?: string | null
+  escritura_url?: string | null
+  escritura_matricula?: string
+  informe_dominio_url?: string | null
+  // Tax / utilities
+  dgr_cuenta?: string
+  nomenclatura_catastral?: string
+  municipalidad_cuenta?: string
+  agua_unidad_facturacion?: string
+  luz_n_cliente?: string
+  luz_n_contrato?: string
+  gas_n_cuenta?: string
 }
 
 export async function createProperty(data: CreatePropertyData) {
@@ -62,4 +77,24 @@ export async function updateProperty(id: string, data: Partial<CreatePropertyDat
   revalidatePath('/properties')
   revalidatePath(`/properties/${id}`)
   return property
+}
+
+export async function addGarante(propertyId: string, contactId: string, vinculo?: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('property_garantes')
+    .insert({ property_id: propertyId, contact_id: contactId, vinculo: vinculo ?? null })
+  if (error) throw new Error(error.message)
+  revalidatePath(`/properties/${propertyId}`)
+}
+
+export async function removeGarante(propertyId: string, contactId: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('property_garantes')
+    .delete()
+    .eq('property_id', propertyId)
+    .eq('contact_id', contactId)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/properties/${propertyId}`)
 }

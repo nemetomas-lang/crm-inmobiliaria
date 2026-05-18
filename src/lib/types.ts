@@ -57,6 +57,13 @@ export type ContactOrigen =
   | "llamada_directa"
   | "otro";
 
+export type ContactType =
+  | "lead"
+  | "propietario"
+  | "inquilino"
+  | "garante"
+  | "otro";
+
 export interface Contact {
   id: string;
   first_name: string;
@@ -64,16 +71,25 @@ export interface Contact {
   email: string | null;
   phone: string | null;
   dni: string | null;
+  cuil: string | null;
   birth_date: string | null;
   occupation: string | null;
   estimated_income: number | null;
   estado: ContactEstado | null;
   interes: ContactInteres | null;
+  contact_type: ContactType | null;
   budget_min: number | null;
   budget_max: number | null;
   budget_currency: BudgetCurrency | null;
   origen: ContactOrigen | null;
   notas: string | null;
+  // Bank / payout info (propietario, inquilino)
+  banco: string | null;
+  cbu: string | null;
+  alias_cbu: string | null;
+  tipo_cuenta: string | null;
+  // Garante-only
+  recibos_sueldo_urls: string[] | null;
   assigned_to: string | null;
   company_id: string | null;
   created_by: string | null;
@@ -150,12 +166,15 @@ export type PropertyEstado =
   | "alquilado"
   | "no_disponible";
 
+export type PropertyOperacion = "venta" | "alquiler";
+
 export interface Property {
   id: string;
   code: string | null;
   title: string;
   tipo: PropertyTipo | null;
   estado: PropertyEstado | null;
+  operacion: PropertyOperacion | null;
   address: string | null;
   barrio: string | null;
   city: string | null;
@@ -175,14 +194,35 @@ export interface Property {
   orientacion: string | null;
   descripcion: string | null;
   img_urls: string[] | null;
+  video_urls: string[] | null;
   amenities: string[] | null;
   pago_dia: number | null;
   deal_id: string | null;
   owner_contact_id: string | null;
   tenant_contact_id: string | null;
+  // Documents
+  contract_pdf_url: string | null;
+  escritura_url: string | null;
+  escritura_matricula: string | null;
+  informe_dominio_url: string | null;
+  // Tax / utilities
+  dgr_cuenta: string | null;
+  nomenclatura_catastral: string | null;
+  municipalidad_cuenta: string | null;
+  agua_unidad_facturacion: string | null;
+  luz_n_cliente: string | null;
+  luz_n_contrato: string | null;
+  gas_n_cuenta: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PropertyGarante {
+  property_id: string;
+  contact_id: string;
+  vinculo: string | null;
+  created_at: string;
 }
 
 export type TaskKind =
@@ -226,6 +266,7 @@ export interface PropertyWithRelations extends Property {
   owner: Contact | null;
   tenant: Contact | null;
   deal: Deal | null;
+  garantes: Contact[];
 }
 
 export interface ActivityWithRelations extends Activity {

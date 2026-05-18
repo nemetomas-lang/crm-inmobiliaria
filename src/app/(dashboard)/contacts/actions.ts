@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { ContactEstado, ContactInteres, BudgetCurrency, ContactOrigen } from '@/lib/types'
+import type { ContactEstado, ContactInteres, ContactType, BudgetCurrency, ContactOrigen } from '@/lib/types'
 
 export interface CreateContactData {
   first_name: string
@@ -10,16 +10,25 @@ export interface CreateContactData {
   email?: string
   phone?: string
   dni?: string
+  cuil?: string
   birth_date?: string
   occupation?: string
   estimated_income?: number
   estado?: ContactEstado
   interes?: ContactInteres
+  contact_type?: ContactType
   budget_min?: number
   budget_max?: number
   budget_currency?: BudgetCurrency
   origen?: ContactOrigen
   notas?: string
+  // Bank info
+  banco?: string
+  cbu?: string
+  alias_cbu?: string
+  tipo_cuenta?: string
+  // Garante
+  recibos_sueldo_urls?: string[]
   assigned_to?: string
   company_id?: string
 }

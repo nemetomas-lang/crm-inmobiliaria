@@ -15,7 +15,7 @@ import {
   propertyEstadoConfig,
   fmtSqm,
 } from '@/lib/utils'
-import type { Property, PropertyEstado, PropertyTipo } from '@/lib/types'
+import type { Property, PropertyEstado, PropertyTipo, PropertyOperacion } from '@/lib/types'
 import { createProperty } from './actions'
 import {
   Home,
@@ -43,6 +43,7 @@ export default function PropertiesPage() {
     title: '',
     tipo: '',
     estado: 'disponible',
+    operacion: '',
     address: '',
     barrio: '',
     city: 'Córdoba',
@@ -82,6 +83,7 @@ export default function PropertiesPage() {
         title: form.title,
         tipo: form.tipo as PropertyTipo || undefined,
         estado: form.estado as PropertyEstado || 'disponible',
+        operacion: form.operacion as PropertyOperacion || undefined,
         address: form.address || undefined,
         barrio: form.barrio || undefined,
         city: form.city || undefined,
@@ -252,6 +254,11 @@ export default function PropertiesPage() {
               <option value="no_disponible">No disponible</option>
             </Select>
           </div>
+          <Select label="Operación *" value={form.operacion} onChange={set('operacion')}>
+            <option value="">Seleccionar...</option>
+            <option value="venta">Venta</option>
+            <option value="alquiler">Alquiler</option>
+          </Select>
           <Input label="Dirección" value={form.address} onChange={set('address')} placeholder="Av. Colón 1234, Piso 3 Dpto B" />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Barrio" value={form.barrio} onChange={set('barrio')} placeholder="Nueva Córdoba" />

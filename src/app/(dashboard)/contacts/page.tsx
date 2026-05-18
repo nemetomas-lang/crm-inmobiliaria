@@ -16,8 +16,8 @@ import {
   fmtCurrency,
   formatRelativeTime,
 } from '@/lib/utils'
-import type { Contact, ContactEstado, ContactInteres, PipelineStage } from '@/lib/types'
-import { createContact } from './actions'
+import type { Contact, ContactEstado, ContactInteres } from '@/lib/types'
+import { createContact, type CreateContactData } from './actions'
 import {
   Phone,
   Mail,
@@ -87,22 +87,10 @@ export default function ContactsPage() {
     return matchFilter && matchSearch
   })
 
-  const handleCreate = async (formData: Record<string, string>) => {
+  const handleCreate = async (data: CreateContactData) => {
     setSaving(true)
     try {
-      await createContact({
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        estado: (formData.estado as ContactEstado) || 'nuevo',
-        interes: (formData.interes as ContactInteres) || undefined,
-        budget_min: formData.budget_min ? Number(formData.budget_min) : undefined,
-        budget_max: formData.budget_max ? Number(formData.budget_max) : undefined,
-        budget_currency: (formData.budget_currency as 'ARS' | 'USD') || 'USD',
-        origen: formData.origen as never || undefined,
-        notas: formData.notas || undefined,
-      })
+      await createContact(data)
       setShowModal(false)
       fetchContacts()
     } catch (err) {
@@ -211,7 +199,14 @@ export default function ContactsPage() {
                           <div className="flex items-center gap-3">
                             <Avatar name={fullName} size="sm" />
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-ink truncate">{fullName}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-ink truncate">{fullName}</p>
+                                {c.contact_type && c.contact_type !== 'lead' && (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide bg-orange-soft text-orange px-1.5 py-0.5 rounded">
+                                    {c.contact_type}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 text-xs text-ink-3">
                                 {c.email && (
                                   <span className="flex items-center gap-1 truncate">
