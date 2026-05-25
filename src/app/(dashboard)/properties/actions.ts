@@ -79,6 +79,17 @@ export async function updateProperty(id: string, data: Partial<CreatePropertyDat
   return property
 }
 
+export async function deleteProperty(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const { error } = await supabase.from('properties').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/properties')
+}
+
 export async function addGarante(propertyId: string, contactId: string, vinculo?: string) {
   const supabase = await createClient()
   const { error } = await supabase

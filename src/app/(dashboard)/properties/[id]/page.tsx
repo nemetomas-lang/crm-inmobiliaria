@@ -17,7 +17,7 @@ import {
   propertyEstadoConfig,
 } from '@/lib/utils'
 import type { Property, PropertyEstado, PropertyTipo, Contact } from '@/lib/types'
-import { updateProperty, addGarante, removeGarante } from '../actions'
+import { updateProperty, addGarante, removeGarante, deleteProperty } from '../actions'
 import {
   ArrowLeft, Home, BedDouble, Bath, Car, Maximize2, MapPin, Edit2, Save, X,
   User, FileText, DollarSign, Calendar, Compass, Image as ImageIcon, Video,
@@ -207,10 +207,30 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     <>
       <Topbar title={property.title} />
       <main className="flex-1 p-6 space-y-4">
-        <button onClick={() => router.push('/properties')} className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors">
-          <ArrowLeft size={15} />
-          Volver a propiedades
-        </button>
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.push('/properties')} className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors">
+            <ArrowLeft size={15} />
+            Volver a propiedades
+          </button>
+          <button
+            onClick={async () => {
+              const ok = window.confirm(
+                `¿Borrar la propiedad "${property.title}"?\n\nSe eliminarán también sus tareas y vínculos con garantes. Los contactos (propietario/inquilino) NO se borran. Esta acción no se puede deshacer.`
+              )
+              if (!ok) return
+              try {
+                await deleteProperty(id)
+                router.push('/properties')
+              } catch (err) {
+                alert('No se pudo borrar la propiedad:\n\n' + (err instanceof Error ? err.message : String(err)))
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+          >
+            <Trash2 size={13} />
+            Borrar propiedad
+          </button>
+        </div>
 
         {/* Header */}
         <Card padding={false} className="overflow-hidden">

@@ -20,7 +20,7 @@ import {
   formatRelativeTime,
 } from '@/lib/utils'
 import type { Contact, Activity, ActivityKind, ContactEstado, ContactInteres } from '@/lib/types'
-import { addActivity } from '../actions'
+import { addActivity, deleteContact } from '../actions'
 import {
   Phone,
   Mail,
@@ -37,6 +37,7 @@ import {
   Calendar,
   DollarSign,
   FileText,
+  Trash2,
 } from 'lucide-react'
 
 function ActivityIcon({ kind }: { kind: ActivityKind }) {
@@ -118,6 +119,21 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     window.open(`tel:${contact.phone}`, '_blank')
   }
 
+  const handleDelete = async () => {
+    if (!contact) return
+    const name = getFullName(contact.first_name, contact.last_name)
+    const ok = window.confirm(
+      `¿Borrar el contacto "${name}"?\n\nSe eliminarán también su historial de actividades y tareas asociadas. Esta acción no se puede deshacer.`
+    )
+    if (!ok) return
+    try {
+      await deleteContact(id)
+      router.push('/contacts')
+    } catch (err) {
+      alert('No se pudo borrar el contacto:\n\n' + (err instanceof Error ? err.message : String(err)))
+    }
+  }
+
   if (loading) {
     return (
       <>
@@ -152,14 +168,23 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     <>
       <Topbar title={fullName} />
       <main className="flex-1 p-6 space-y-4">
-        {/* Back button */}
-        <button
-          onClick={() => router.push('/contacts')}
-          className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors"
-        >
-          <ArrowLeft size={15} />
-          Volver a contactos
-        </button>
+        {/* Top bar: back + delete */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push('/contacts')}
+            className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors"
+          >
+            <ArrowLeft size={15} />
+            Volver a contactos
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+          >
+            <Trash2 size={13} />
+            Borrar contacto
+          </button>
+        </div>
 
         {/* Header Card */}
         <Card padding={false} className="overflow-hidden">
