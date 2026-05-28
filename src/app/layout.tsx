@@ -23,6 +23,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Neme Negocios Inmobiliarios - CRM",
   description: "Sistema CRM para Neme Negocios Inmobiliarios, Córdoba Argentina",
+  icons: {
+    icon: "/neme-logo.png",
+    apple: "/neme-logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -10,6 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { FileUpload } from '@/components/ui/FileUpload'
 import { Input, Select } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
+import PropertyEditForm from '../PropertyEditForm'
 import {
   fmtCurrency,
   fmtSqm,
@@ -21,7 +23,7 @@ import { updateProperty, addGarante, removeGarante, deleteProperty } from '../ac
 import {
   ArrowLeft, Home, BedDouble, Bath, Car, Maximize2, MapPin, Edit2, Save, X,
   User, FileText, DollarSign, Calendar, Compass, Image as ImageIcon, Video,
-  Receipt, ShieldCheck, Trash2,
+  Receipt, ShieldCheck, Trash2, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -124,6 +126,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [allContacts, setAllContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('general')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -212,24 +216,33 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
             <ArrowLeft size={15} />
             Volver a propiedades
           </button>
-          <button
-            onClick={async () => {
-              const ok = window.confirm(
-                `¿Borrar la propiedad "${property.title}"?\n\nSe eliminarán también sus tareas y vínculos con garantes. Los contactos (propietario/inquilino) NO se borran. Esta acción no se puede deshacer.`
-              )
-              if (!ok) return
-              try {
-                await deleteProperty(id)
-                router.push('/properties')
-              } catch (err) {
-                alert('No se pudo borrar la propiedad:\n\n' + (err instanceof Error ? err.message : String(err)))
-              }
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
-          >
-            <Trash2 size={13} />
-            Borrar propiedad
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface border border-border rounded-lg transition-colors"
+            >
+              <Pencil size={13} />
+              Editar
+            </button>
+            <button
+              onClick={async () => {
+                const ok = window.confirm(
+                  `¿Borrar la propiedad "${property.title}"?\n\nSe eliminarán también sus tareas y vínculos con garantes. Los contactos (propietario/inquilino) NO se borran. Esta acción no se puede deshacer.`
+                )
+                if (!ok) return
+                try {
+                  await deleteProperty(id)
+                  router.push('/properties')
+                } catch (err) {
+                  alert('No se pudo borrar la propiedad:\n\n' + (err instanceof Error ? err.message : String(err)))
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+            >
+              <Trash2 size={13} />
+              Borrar propiedad
+            </button>
+          </div>
         </div>
 
         {/* Header */}
@@ -619,6 +632,26 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       </main>
+
+      <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="Editar propiedad" size="lg">
+        <PropertyEditForm
+          initial={property}
+          saving={savingEdit}
+          onCancel={() => setShowEditModal(false)}
+          onSubmit={async (data) => {
+            setSavingEdit(true)
+            try {
+              await updateProperty(id, data)
+              setShowEditModal(false)
+              fetchData()
+            } catch (err) {
+              alert('Error al guardar:\n\n' + (err instanceof Error ? err.message : String(err)))
+            } finally {
+              setSavingEdit(false)
+            }
+          }}
+        />
+      </Modal>
     </>
   )
 }

@@ -39,10 +39,14 @@ import {
   MessageCircle,
   Clock,
   CheckCircle,
+  Plus,
 } from 'lucide-react'
 import Link from 'next/link'
-import { format, isToday, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
+import TaskFormModal from '@/components/forms/TaskFormModal'
+import { completeTask, uncompleteTask } from './calendar/actions'
+import { cn } from '@/lib/utils'
 
 // Activity kind icon map
 function ActivityIcon({ kind }: { kind: ActivityKind }) {
@@ -86,6 +90,21 @@ export default function DashboardPage() {
   const [recentContacts, setRecentContacts] = useState<Contact[]>([])
   const [stageData, setStageData] = useState<StageData[]>([])
   const [loading, setLoading] = useState(true)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+
+  const handleToggleTask = async (taskId: string, completed: boolean) => {
+    try {
+      if (completed) {
+        await uncompleteTask(taskId)
+      } else {
+        await completeTask(taskId)
+      }
+      // Realtime channel will refetch, but call explicitly for fast UI feedback
+      fetchData()
+    } catch (err) {
+      alert('Error al actualizar la tarea:\n\n' + (err instanceof Error ? err.message : String(err)))
+    }
+  }
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -120,12 +139,14 @@ export default function DashboardPage() {
         .select('*, contact:contacts(id,first_name,last_name)')
         .order('created_at', { ascending: false })
         .limit(5),
+      // Show all of today's tasks (pending AND completed) so the user
+      // can re-check or strike-through right from the dashboard.
       supabase
         .from('tasks')
         .select('*, contact:contacts(id,first_name,last_name)')
         .gte('scheduled_at', `${today}T00:00:00`)
         .lte('scheduled_at', `${today}T23:59:59`)
-        .is('completed_at', null)
+        .order('completed_at', { ascending: true, nullsFirst: true })
         .order('scheduled_at', { ascending: true })
         .limit(10),
       supabase
@@ -284,11 +305,19 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Tareas de Hoy</CardTitle>
-              {todayTasks.length > 0 && (
-                <span className="text-xs font-semibold text-orange bg-orange-50 px-2 py-0.5 rounded-full">
-                  {todayTasks.length}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {todayTasks.length > 0 && (
+                  <span className="text-xs font-semibold text-orange bg-orange-50 px-2 py-0.5 rounded-full">
+                    {todayTasks.filter((t) => !t.completed_at).length}/{todayTasks.length}
+                  </span>
+                )}
+                <button
+                  onClick={() => setShowTaskModal(true)}
+                  className="flex items-center gap-1 text-xs font-semibold text-orange hover:text-orange-600 transition-colors"
+                >
+                  <Plus size={13} /> Nueva
+                </button>
+              </div>
             </CardHeader>
             {loading ? (
               <div className="space-y-3">
@@ -307,27 +336,51 @@ export default function DashboardPage() {
                 title="Sin tareas"
                 description="No tenés tareas programadas para hoy"
                 icon={<CheckCircle size={20} />}
+                action={
+                  <button
+                    onClick={() => setShowTaskModal(true)}
+                    className="text-xs font-semibold text-orange hover:text-orange-600 flex items-center gap-1"
+                  >
+                    <Plus size={13} /> Crear primera tarea
+                  </button>
+                }
               />
             ) : (
               <div className="space-y-2">
-                {todayTasks.map((task) => (
-                  <div key={task.id} className="flex items-start gap-2.5 py-2 border-b border-border last:border-0">
-                    <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink truncate">{task.title}</p>
-                      {task.contact && (
-                        <p className="text-xs text-ink-3 truncate">
-                          {getFullName(task.contact.first_name, task.contact.last_name)}
+                {todayTasks.map((task) => {
+                  const done = !!task.completed_at
+                  return (
+                    <div key={task.id} className="flex items-start gap-2.5 py-2 border-b border-border last:border-0">
+                      <button
+                        onClick={() => handleToggleTask(task.id, done)}
+                        className={cn(
+                          'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors',
+                          done
+                            ? 'bg-orange border-orange text-white'
+                            : 'border-border hover:border-orange'
+                        )}
+                        title={done ? 'Desmarcar' : 'Marcar como completada'}
+                      >
+                        {done && <CheckCircle size={12} />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('text-sm font-medium text-ink truncate', done && 'line-through text-ink-light')}>
+                          {task.title}
                         </p>
-                      )}
-                      {task.scheduled_at && (
-                        <p className="text-xs text-ink-light">
-                          {format(parseISO(task.scheduled_at), 'HH:mm')}
-                        </p>
-                      )}
+                        {task.contact && (
+                          <p className={cn('text-xs text-ink-3 truncate', done && 'line-through')}>
+                            {getFullName(task.contact.first_name, task.contact.last_name)}
+                          </p>
+                        )}
+                        {task.scheduled_at && (
+                          <p className="text-xs text-ink-light">
+                            {format(parseISO(task.scheduled_at), 'HH:mm')}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Card>
@@ -437,6 +490,12 @@ export default function DashboardPage() {
         </div>
 
       </main>
+
+      <TaskFormModal
+        open={showTaskModal}
+        onClose={() => setShowTaskModal(false)}
+        onSaved={fetchData}
+      />
     </>
   )
 }

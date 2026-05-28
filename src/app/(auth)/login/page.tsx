@@ -44,8 +44,9 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px]">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-orange rounded-2xl mb-4 shadow-lg">
-            <span className="text-white font-display font-bold text-2xl">N</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/neme-logo.png" alt="Neme" className="w-full h-full object-contain" />
           </div>
           <h1 className="font-display font-bold text-2xl text-ink">Neme Negocios</h1>
           <p className="text-ink-3 text-sm mt-1">Inmobiliarios · Córdoba</p>

@@ -27,6 +27,7 @@ export async function createTask(data: CreateTaskData) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/calendar')
+  revalidatePath('/')
   return task
 }
 
@@ -39,6 +40,19 @@ export async function completeTask(id: string) {
 
   if (error) throw new Error(error.message)
   revalidatePath('/calendar')
+  revalidatePath('/')
+}
+
+export async function uncompleteTask(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('tasks')
+    .update({ completed_at: null, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/calendar')
+  revalidatePath('/')
 }
 
 export async function deleteTask(id: string) {
@@ -46,4 +60,5 @@ export async function deleteTask(id: string) {
   const { error } = await supabase.from('tasks').delete().eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/calendar')
+  revalidatePath('/')
 }

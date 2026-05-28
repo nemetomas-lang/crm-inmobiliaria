@@ -20,7 +20,9 @@ import {
   formatRelativeTime,
 } from '@/lib/utils'
 import type { Contact, Activity, ActivityKind, ContactEstado, ContactInteres } from '@/lib/types'
-import { addActivity, deleteContact } from '../actions'
+import { addActivity, deleteContact, updateContact, type CreateContactData } from '../actions'
+import { Modal } from '@/components/ui/Modal'
+import ContactForm from '../ContactForm'
 import {
   Phone,
   Mail,
@@ -38,6 +40,7 @@ import {
   DollarSign,
   FileText,
   Trash2,
+  Pencil,
 } from 'lucide-react'
 
 function ActivityIcon({ kind }: { kind: ActivityKind }) {
@@ -69,6 +72,8 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true)
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const fetchData = useCallback(async () => {
     const supabase = createClient()
@@ -117,6 +122,19 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const handleCall = () => {
     if (!contact?.phone) return
     window.open(`tel:${contact.phone}`, '_blank')
+  }
+
+  const handleEditSave = async (data: CreateContactData) => {
+    setSavingEdit(true)
+    try {
+      await updateContact(id, data)
+      setShowEditModal(false)
+      fetchData()
+    } catch (err) {
+      alert('Error al guardar:\n\n' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -177,13 +195,22 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             <ArrowLeft size={15} />
             Volver a contactos
           </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
-          >
-            <Trash2 size={13} />
-            Borrar contacto
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface border border-border rounded-lg transition-colors"
+            >
+              <Pencil size={13} />
+              Editar
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors"
+            >
+              <Trash2 size={13} />
+              Borrar contacto
+            </button>
+          </div>
         </div>
 
         {/* Header Card */}
@@ -393,6 +420,37 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </main>
+
+      <Modal open={showEditModal} onClose={() => setShowEditModal(false)} title="Editar contacto" size="lg">
+        <ContactForm
+          initialValues={{
+            first_name: contact.first_name,
+            last_name: contact.last_name,
+            email: contact.email ?? undefined,
+            phone: contact.phone ?? undefined,
+            dni: contact.dni ?? undefined,
+            cuil: contact.cuil ?? undefined,
+            birth_date: contact.birth_date ?? undefined,
+            occupation: contact.occupation ?? undefined,
+            estado: contact.estado ?? undefined,
+            interes: contact.interes ?? undefined,
+            contact_type: contact.contact_type ?? undefined,
+            budget_min: contact.budget_min ?? undefined,
+            budget_max: contact.budget_max ?? undefined,
+            budget_currency: contact.budget_currency ?? undefined,
+            origen: contact.origen ?? undefined,
+            notas: contact.notas ?? undefined,
+            banco: contact.banco ?? undefined,
+            cbu: contact.cbu ?? undefined,
+            alias_cbu: contact.alias_cbu ?? undefined,
+            tipo_cuenta: contact.tipo_cuenta ?? undefined,
+            recibos_sueldo_urls: contact.recibos_sueldo_urls ?? undefined,
+          }}
+          onSubmit={handleEditSave}
+          onCancel={() => setShowEditModal(false)}
+          saving={savingEdit}
+        />
+      </Modal>
     </>
   )
 }
