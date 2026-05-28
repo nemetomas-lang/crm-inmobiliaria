@@ -136,7 +136,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <>
         <Topbar title="Cargando..." />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6">
           <div className="skeleton h-40 rounded-2xl mb-6" />
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 skeleton h-96 rounded-2xl" />
@@ -151,7 +151,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <>
         <Topbar title="Deal no encontrado" />
-        <main className="flex-1 p-6 flex items-center justify-center">
+        <main className="flex-1 p-3 sm:p-6 flex items-center justify-center">
           <EmptyState title="Deal no encontrado" description="El deal que buscás no existe" />
         </main>
       </>
@@ -166,7 +166,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <Topbar title={deal.title} />
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-3 sm:p-6 space-y-4">
         <button
           onClick={() => router.push('/deals')}
           className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors"

@@ -214,7 +214,7 @@ export default function DashboardPage() {
   return (
     <>
       <Topbar title="Dashboard" subtitle={format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })} />
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 p-3 sm:p-6 space-y-6">
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

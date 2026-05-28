@@ -12,9 +12,11 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  X,
 } from 'lucide-react'
 import { cn, getInitials, getAvatarColor } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { useMobileNav } from './MobileNav'
 
 interface NavItem {
   label: string
@@ -41,6 +43,7 @@ interface SidebarProps {
 export function Sidebar({ userName, userEmail, userAvatar }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { open, setOpen } = useMobileNav()
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -58,76 +61,105 @@ export function Sidebar({ userName, userEmail, userAvatar }: SidebarProps) {
   const avatarBg = getAvatarColor(userName)
 
   return (
-    <aside className="w-[232px] min-h-screen bg-ink flex flex-col flex-shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/neme-logo.png" alt="Neme" className="w-full h-full object-contain" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-white font-display font-bold text-sm leading-tight truncate">Neme Negocios</p>
-            <p className="text-white/50 text-xs leading-tight">Inmobiliarios</p>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      <div
+        onClick={() => setOpen(false)}
+        className={cn(
+          'fixed inset-0 z-40 bg-ink/60 backdrop-blur-sm transition-opacity duration-200 md:hidden',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
+        aria-hidden="true"
+      />
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const active = isActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
-                active
-                  ? 'bg-orange text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/8'
-              )}
-            >
-              <span className={cn(
-                'flex-shrink-0 transition-colors',
-                active ? 'text-white' : 'text-white/50 group-hover:text-white/80'
-              )}>
-                {item.icon}
-              </span>
-              <span className="flex-1 truncate">{item.label}</span>
-              {active && <ChevronRight size={14} className="text-white/60 flex-shrink-0" />}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* User footer */}
-      <div className="px-3 py-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
-          {userAvatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={userAvatar} alt={userName ?? ''} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-          ) : (
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: avatarBg }}
-            >
-              {initials}
+      <aside
+        className={cn(
+          // Mobile (default): fixed off-canvas drawer
+          'fixed inset-y-0 left-0 z-50 w-[260px] bg-ink flex flex-col flex-shrink-0',
+          'transform transition-transform duration-200 ease-out',
+          open ? 'translate-x-0' : '-translate-x-full',
+          // Desktop (md+): static, in-flow column
+          'md:sticky md:top-0 md:h-screen md:translate-x-0 md:w-[232px] md:z-auto'
+        )}
+      >
+        {/* Logo + close (mobile only) */}
+        <div className="px-5 py-6 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/neme-logo.png" alt="Neme" className="w-full h-full object-contain" />
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">{userName ?? 'Usuario'}</p>
-            <p className="text-white/40 text-[11px] truncate">{userEmail ?? ''}</p>
+            <div className="min-w-0">
+              <p className="text-white font-display font-bold text-sm leading-tight truncate">Neme Negocios</p>
+              <p className="text-white/50 text-xs leading-tight">Inmobiliarios</p>
+            </div>
           </div>
           <button
-            onClick={handleSignOut}
-            title="Cerrar sesión"
-            className="text-white/40 hover:text-white/70 transition-colors p-1 rounded"
+            onClick={() => setOpen(false)}
+            className="md:hidden text-white/60 hover:text-white p-1"
+            aria-label="Cerrar menú"
           >
-            <LogOut size={14} />
+            <X size={18} />
           </button>
         </div>
-      </div>
-    </aside>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
+                  active
+                    ? 'bg-orange text-white'
+                    : 'text-white/60 hover:text-white hover:bg-white/8'
+                )}
+              >
+                <span className={cn(
+                  'flex-shrink-0 transition-colors',
+                  active ? 'text-white' : 'text-white/50 group-hover:text-white/80'
+                )}>
+                  {item.icon}
+                </span>
+                <span className="flex-1 truncate">{item.label}</span>
+                {active && <ChevronRight size={14} className="text-white/60 flex-shrink-0" />}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* User footer */}
+        <div className="px-3 py-4 border-t border-white/10">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl">
+            {userAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={userAvatar} alt={userName ?? ''} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: avatarBg }}
+              >
+                {initials}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-xs font-semibold truncate">{userName ?? 'Usuario'}</p>
+              <p className="text-white/40 text-[11px] truncate">{userEmail ?? ''}</p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Cerrar sesión"
+              className="text-white/40 hover:text-white/70 transition-colors p-1 rounded"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   )
 }

@@ -136,7 +136,7 @@ export default function CalendarPage() {
         addLabel="Nuevo evento"
       />
 
-      <main className="flex-1 p-6 flex gap-4 overflow-hidden">
+      <main className="flex-1 p-3 sm:p-6 flex flex-col lg:flex-row gap-4 overflow-hidden">
         {/* Calendar */}
         <div className="flex-1 flex flex-col min-w-0">
           <Card className="flex-1 flex flex-col">
@@ -280,7 +280,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Sidebar: Upcoming tasks */}
-        <div className="w-72 flex-shrink-0 space-y-4">
+        <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
           <Card>
             <div className="flex items-center gap-2 mb-4">
               <Clock size={16} className="text-orange" />

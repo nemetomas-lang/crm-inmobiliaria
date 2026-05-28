@@ -117,7 +117,7 @@ export default function CompaniesPage() {
         searchValue={search}
       />
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-3 sm:p-6">
         <div className="bg-white border border-border rounded-[16px] overflow-hidden shadow-[var(--shadow-card)]">
           {loading ? (
             <div className="p-6 space-y-4">

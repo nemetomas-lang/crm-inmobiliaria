@@ -147,7 +147,7 @@ export default function PropertiesPage() {
         }
       />
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-3 sm:p-6">
         {loading ? (
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4' : 'space-y-3'}>
             {[...Array(8)].map((_, i) => (
@@ -173,7 +173,7 @@ export default function PropertiesPage() {
             {filtered.map((p) => <PropertyCard key={p.id} property={p} onClick={() => router.push(`/properties/${p.id}`)} />)}
           </div>
         ) : (
-          <div className="bg-white border border-border rounded-[16px] overflow-hidden shadow-[var(--shadow-card)]">
+          <div className="bg-white border border-border rounded-[16px] shadow-[var(--shadow-card)] overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-border">

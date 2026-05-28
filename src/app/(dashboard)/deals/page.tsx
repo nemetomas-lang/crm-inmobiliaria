@@ -59,7 +59,7 @@ export default function DealsPage() {
         title="Pipeline"
         subtitle={`${totalDeals} deals · ${activeDeals} activos`}
       />
-      <main className="flex-1 p-6 overflow-hidden">
+      <main className="flex-1 p-3 sm:p-6 overflow-hidden">
         {loading ? (
           <div className="flex gap-4 overflow-x-auto">
             {[...Array(6)].map((_, i) => (

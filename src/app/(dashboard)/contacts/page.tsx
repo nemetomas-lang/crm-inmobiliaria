@@ -112,7 +112,7 @@ export default function ContactsPage() {
         searchValue={search}
       />
 
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Stage filter chips */}
         <div className="flex flex-wrap gap-2">
           {STAGE_FILTERS.map((sf) => {

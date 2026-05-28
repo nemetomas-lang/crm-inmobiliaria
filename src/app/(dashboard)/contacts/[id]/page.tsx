@@ -156,7 +156,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     return (
       <>
         <Topbar title="Cargando..." />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6">
           <div className="skeleton h-40 rounded-2xl mb-6" />
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2 skeleton h-96 rounded-2xl" />
@@ -171,7 +171,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     return (
       <>
         <Topbar title="Contacto no encontrado" />
-        <main className="flex-1 p-6 flex items-center justify-center">
+        <main className="flex-1 p-3 sm:p-6 flex items-center justify-center">
           <EmptyState title="Contacto no encontrado" description="El contacto que buscás no existe" />
         </main>
       </>
@@ -185,7 +185,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <Topbar title={fullName} />
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Top bar: back + delete */}
         <div className="flex items-center justify-between">
           <button
@@ -215,11 +215,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Header Card */}
         <Card padding={false} className="overflow-hidden">
-          <div className="bg-gradient-to-r from-ink to-ink-2 p-6">
-            <div className="flex items-start gap-5">
-              <Avatar name={fullName} size="xl" className="ring-4 ring-white/20" />
-              <div className="flex-1 min-w-0">
-                <h2 className="text-2xl font-display font-bold text-white">{fullName}</h2>
+          <div className="bg-gradient-to-r from-ink to-ink-2 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+              <div className="flex items-center gap-4 w-full sm:w-auto min-w-0">
+                <Avatar name={fullName} size="xl" className="ring-4 ring-white/20 flex-shrink-0" />
+                <div className="flex-1 min-w-0 sm:hidden">
+                  <h2 className="text-xl font-display font-bold text-white break-words">{fullName}</h2>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 w-full">
+                <h2 className="hidden sm:block text-2xl font-display font-bold text-white">{fullName}</h2>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {estadoCfg && (
                     <Badge bgColor="rgba(255,255,255,0.15)" textColor="white" dot color={estadoCfg.color}>
@@ -232,37 +237,36 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     </Badge>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-4 mt-3 text-white/70 text-sm">
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-white/70 text-xs sm:text-sm">
                   {contact.email && (
-                    <span className="flex items-center gap-1.5">
-                      <Mail size={14} />{contact.email}
+                    <span className="flex items-center gap-1.5 break-all">
+                      <Mail size={14} className="flex-shrink-0" />
+                      <span className="break-all">{contact.email}</span>
                     </span>
                   )}
                   {contact.phone && (
                     <span className="flex items-center gap-1.5">
-                      <Phone size={14} />{contact.phone}
+                      <Phone size={14} className="flex-shrink-0" />{contact.phone}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
-                {contact.phone && (
-                  <>
-                    <button
-                      onClick={handleWhatsApp}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-[#25d366] hover:bg-[#1db954] text-white text-sm font-semibold rounded-xl transition-colors"
-                    >
-                      <MessageCircle size={15} /> WhatsApp
-                    </button>
-                    <button
-                      onClick={handleCall}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold rounded-xl transition-colors"
-                    >
-                      <Phone size={15} /> Llamar
-                    </button>
-                  </>
-                )}
-              </div>
+              {contact.phone && (
+                <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                  <button
+                    onClick={handleWhatsApp}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-[#25d366] hover:bg-[#1db954] text-white text-sm font-semibold rounded-xl transition-colors"
+                  >
+                    <MessageCircle size={15} /> WhatsApp
+                  </button>
+                  <button
+                    onClick={handleCall}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold rounded-xl transition-colors"
+                  >
+                    <Phone size={15} /> Llamar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </Card>

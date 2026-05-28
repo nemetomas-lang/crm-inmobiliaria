@@ -170,7 +170,7 @@ export default function AdminPage() {
         }
       />
 
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Tab navigation */}
         <div className="flex gap-1 bg-surface rounded-2xl p-1 border border-border w-fit flex-wrap">
           {TABS.map((tab) => (

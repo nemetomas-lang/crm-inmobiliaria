@@ -177,7 +177,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     return (
       <>
         <Topbar title="Cargando..." />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-6">
           <div className="skeleton h-48 rounded-2xl mb-4" />
           <div className="skeleton h-96 rounded-2xl" />
         </main>
@@ -189,7 +189,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     return (
       <>
         <Topbar title="Propiedad no encontrada" />
-        <main className="flex-1 p-6 flex items-center justify-center">
+        <main className="flex-1 p-3 sm:p-6 flex items-center justify-center">
           <EmptyState title="Propiedad no encontrada" description="La propiedad que buscás no existe" />
         </main>
       </>
@@ -210,7 +210,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <Topbar title={property.title} />
-      <main className="flex-1 p-6 space-y-4">
+      <main className="flex-1 p-3 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <button onClick={() => router.push('/properties')} className="flex items-center gap-1.5 text-sm text-ink-3 hover:text-ink transition-colors">
             <ArrowLeft size={15} />
